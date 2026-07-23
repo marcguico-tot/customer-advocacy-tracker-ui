@@ -102,6 +102,8 @@
 
   <div class="toolbar">
     <button class="btn-primary" id="fu-add-btn">+ Add item</button>
+    <button id="fu-refresh-btn">Refresh</button>
+    <span id="fu-sync-status" style="font-size:12px;color:#6f6d67;align-self:center;"></span>
   </div>
 
   <div class="form" id="fu-form">
@@ -319,6 +321,16 @@
   }
 
   document.getElementById('fu-add-btn').addEventListener('click', function() { openForm(currentItems, null); });
+  document.getElementById('fu-refresh-btn').addEventListener('click', function() {
+    var statusEl = document.getElementById('fu-sync-status');
+    statusEl.textContent = 'Refreshing…';
+    loadItems().then(function(items) {
+      currentItems = items;
+      render(currentItems);
+      statusEl.textContent = SCRIPT_URL ? 'Synced just now' : 'Local only (no SCRIPT_URL set)';
+      setTimeout(function() { statusEl.textContent = ''; }, 3000);
+    });
+  });
   document.getElementById('f-cancel').addEventListener('click', closeForm);
   document.getElementById('f-save').addEventListener('click', function() {
     var account = document.getElementById('f-account').value.trim();
