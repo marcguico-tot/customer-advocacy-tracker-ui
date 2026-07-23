@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advocacy Follow-up Tracker</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 20px;
+    background: #14161a;
+    color: #e8e6e1;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; }
+  .head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 24px; }
+  .title { font-size: 20px; font-weight: 600; margin: 0; }
+  .count { font-size: 13px; color: #9a9890; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat { background: #1c1f24; border: 1px solid #2a2e35; border-radius: 8px; padding: 16px; }
+  .stat-num { font-size: 26px; font-weight: 600; }
+  .stat-label { font-size: 13px; color: #9a9890; margin-top: 2px; }
+
+  .toolbar { margin-bottom: 16px; }
+  button {
+    background: #23262c;
+    color: #e8e6e1;
+    border: 1px solid #3a3e46;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: #2a2e35; border-color: #4a4f58; }
+  button:active { transform: scale(0.98); }
+  .btn-primary { background: #2f6e56; border-color: #2f6e56; }
+  .btn-primary:hover { background: #38805f; border-color: #38805f; }
+
+  .row {
+    background: #1c1f24;
+    border: 1px solid #2a2e35;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .row.overdue { border-left: 3px solid #d9734a; border-radius: 0 10px 10px 0; }
+  .main { flex: 1; min-width: 220px; }
+  .name { font-size: 15px; font-weight: 600; margin: 0 0 3px; color: #f2f0eb; }
+  .sub { font-size: 13px; color: #9a9890; margin: 0; }
+  .meta { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .due { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px; text-align: right; min-width: 90px; color: #b8b6ae; line-height: 1.5; }
+  .due .lbl { color: #6f6d67; }
+  .badge { font-size: 12px; padding: 4px 10px; border-radius: 6px; white-space: nowrap; font-weight: 500; }
+  .badge-overdue { background: #3d2420; color: #e2967d; }
+  .badge-soon { background: #3d3320; color: #e0b56b; }
+  .badge-ok { background: #23262c; color: #9a9890; }
+  .badge-close { background: #3d3320; color: #e0b56b; }
+  .actions { display: flex; gap: 6px; }
+  .actions button { padding: 6px 10px; font-size: 12px; }
+  .empty { text-align: center; padding: 48px 16px; color: #6f6d67; }
+
+  .form {
+    background: #1c1f24;
+    border: 1px solid #2a2e35;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .form.open { display: block; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form label { font-size: 12px; color: #9a9890; display: block; margin-bottom: 4px; }
+  .form input, .form select {
+    width: 100%;
+    background: #14161a;
+    border: 1px solid #3a3e46;
+    border-radius: 6px;
+    color: #e8e6e1;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .form input:focus, .form select:focus { outline: none; border-color: #5a7fb8; }
+  .full { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <p class="title">Advocacy follow-ups</p>
+    <span class="count" id="fu-count"></span>
+  </div>
+
+  <div class="stats" id="fu-stats"></div>
+
+  <div class="toolbar">
+    <button class="btn-primary" id="fu-add-btn">+ Add item</button>
+  </div>
+
+  <div class="form" id="fu-form">
+    <div class="form-grid">
+      <div><label>Account name</label><input type="text" id="f-account" placeholder="e.g. NOAT" /></div>
+      <div><label>Contact</label><input type="text" id="f-contact" placeholder="e.g. Martyn Tyson" /></div>
+      <div><label>Ask type</label>
+        <select id="f-asktype">
+          <option>Public Review</option>
+          <option>Testimonial</option>
+          <option>Referral</option>
+          <option>Combo</option>
+          <option>No Ask</option>
+        </select>
+      </div>
+      <div><label>Status</label>
+        <select id="f-status">
+          <option>Waiting on customer</option>
+          <option>Follow-up sent</option>
+          <option>Ready to close</option>
+        </select>
+      </div>
+      <div><label>Date sent</label><input type="date" id="f-sent" /></div>
+      <div><label>Follow-up due</label><input type="date" id="f-due" /></div>
+      <div class="full"><label>Notes</label><input type="text" id="f-notes" placeholder="e.g. Sent once, no second follow-up planned" /></div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-primary" id="f-save">Save item</button>
+      <button id="f-cancel">Cancel</button>
+    </div>
+  </div>
+
+  <div id="fu-list"></div>
+  <div class="empty" id="fu-empty" style="display:none;">No follow-ups tracked yet. Add one to get started.</div>
+</div>
+
+<script>
+(function() {
+  // Paste your Apps Script Web App deployment URL below (see apps-script-backend.gs).
+  // Leave blank to fall back to this browser's localStorage only.
+  var SCRIPT_URL = 'https://script.google.com/a/macros/team.tokenoftrust.com/s/AKfycbylJ1sK5JlAm-v-QjYiebqqOhjmz1kRfze_fcXFH7ri5nP6hr2a212pWm0GgfZW4o2w6g/exec';
+
+  var STORAGE_KEY = 'advocacy-followup-items';
+  var editingId = null;
+  var currentItems = [];
+
+  var seed = [
+    { id: '1', account: 'NOAT', contact: 'Martyn Tyson', askType: 'Public Review', status: 'Waiting on customer', sent: '2026-07-17', due: '2026-07-25', notes: 'Combined ROW store fix check-in + G2 ask. Sent once, no second follow-up planned.' },
+    { id: '2', account: 'riteinnovations.com', contact: 'Hayden', askType: 'Public Review', status: 'Waiting on customer', sent: '2026-07-21', due: '2026-07-31', notes: 'Churned customer, offered to leave review during cancellation call. One email only.' },
+    { id: '3', account: 'Vape Ranger', contact: 'Melissa Krizman', askType: 'Public Review', status: 'Waiting on customer', sent: '2026-07-24', due: '2026-08-03', notes: 'Utah hemp rate fix. One follow-up planned around Aug 8-10 if no reply.' }
+  ];
+
+  function daysUntil(dateStr) {
+    var due = new Date(dateStr + 'T00:00:00');
+    var now = new Date();
+    now.setHours(0,0,0,0);
+    return Math.round((due - now) / 86400000);
+  }
+
+  function fmtDate(dateStr) {
+    if (!dateStr) return '—';
+    var d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function statusBadge(item) {
+    var days = daysUntil(item.due);
+    if (item.status === 'Ready to close') return { text: 'Ready to close', cls: 'badge-close' };
+    if (days < 0) return { text: Math.abs(days) + 'd overdue', cls: 'badge-overdue' };
+    if (days === 0) return { text: 'Due today', cls: 'badge-overdue' };
+    if (days <= 3) return { text: days + 'd left', cls: 'badge-soon' };
+    return { text: days + 'd left', cls: 'badge-ok' };
+  }
+
+  function loadItems() {
+    if (SCRIPT_URL) {
+      return fetch(SCRIPT_URL)
+        .then(function(res) { return res.json(); })
+        .catch(function(err) {
+          console.error('Failed to load from sheet, falling back to local:', err);
+          return loadLocal_();
+        });
+    }
+    return Promise.resolve(loadLocal_());
+  }
+
+  function loadLocal_() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+    return seed.slice();
+  }
+
+  function saveItems(items) {
+    // Always keep a local copy as a fallback / offline cache.
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) { console.error(e); }
+  }
+
+  function pushItem_(action, item) {
+    if (!SCRIPT_URL) return;
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(Object.assign({ action: action }, item))
+    }).catch(function(err) { console.error('Sync failed:', err); });
+  }
+
+  function render(items) {
+    items.sort(function(a, b) { return daysUntil(a.due) - daysUntil(b.due); });
+
+    var overdueCount = items.filter(function(i) { return daysUntil(i.due) < 0 && i.status !== 'Ready to close'; }).length;
+    var dueSoonCount = items.filter(function(i) { var d = daysUntil(i.due); return d >= 0 && d <= 3 && i.status !== 'Ready to close'; }).length;
+    var waitingCount = items.filter(function(i) { return i.status === 'Waiting on customer'; }).length;
+
+    document.getElementById('fu-count').textContent = items.length + ' tracked';
+    document.getElementById('fu-stats').innerHTML =
+      '<div class="stat"><div class="stat-num" style="color:#e2967d">' + overdueCount + '</div><div class="stat-label">Overdue</div></div>' +
+      '<div class="stat"><div class="stat-num" style="color:#e0b56b">' + dueSoonCount + '</div><div class="stat-label">Due within 3 days</div></div>' +
+      '<div class="stat"><div class="stat-num">' + waitingCount + '</div><div class="stat-label">Waiting on customer</div></div>';
+
+    var list = document.getElementById('fu-list');
+    var empty = document.getElementById('fu-empty');
+
+    if (items.length === 0) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    list.innerHTML = items.map(function(item) {
+      var badge = statusBadge(item);
+      var isOverdue = daysUntil(item.due) < 0 && item.status !== 'Ready to close';
+      return '<div class="row' + (isOverdue ? ' overdue' : '') + '">' +
+        '<div class="main">' +
+          '<p class="name">' + item.account + (item.contact ? ' &middot; ' + item.contact : '') + '</p>' +
+          '<p class="sub">' + item.askType + ' — ' + item.status + (item.notes ? ' &middot; ' + item.notes : '') + '</p>' +
+        '</div>' +
+        '<div class="meta">' +
+          '<div class="due"><div><span class="lbl">sent</span> ' + fmtDate(item.sent) + '</div><div><span class="lbl">due</span> ' + fmtDate(item.due) + '</div></div>' +
+          '<span class="badge ' + badge.cls + '">' + badge.text + '</span>' +
+          '<div class="actions">' +
+            '<button data-edit="' + item.id + '">Edit</button>' +
+            '<button data-done="' + item.id + '">Done</button>' +
+            '<button data-del="' + item.id + '">Delete</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(list.querySelectorAll('[data-edit]'), function(btn) {
+      btn.addEventListener('click', function() { openForm(items, btn.getAttribute('data-edit')); });
+    });
+    Array.prototype.forEach.call(list.querySelectorAll('[data-done]'), function(btn) {
+      btn.addEventListener('click', function() {
+        var id = btn.getAttribute('data-done');
+        var it = items.find(function(i) { return i.id === id; });
+        if (it) {
+          it.status = 'Ready to close';
+          saveItems(items);
+          pushItem_('update', it);
+          render(items);
+        }
+      });
+    });
+    Array.prototype.forEach.call(list.querySelectorAll('[data-del]'), function(btn) {
+      btn.addEventListener('click', function() {
+        var id = btn.getAttribute('data-del');
+        currentItems = items.filter(function(i) { return i.id !== id; });
+        saveItems(currentItems);
+        pushItem_('delete', { id: id });
+        render(currentItems);
+      });
+    });
+  }
+
+  function openForm(items, id) {
+    editingId = id || null;
+    var form = document.getElementById('fu-form');
+    form.classList.add('open');
+    if (id) {
+      var it = items.find(function(i) { return i.id === id; });
+      document.getElementById('f-account').value = it.account;
+      document.getElementById('f-contact').value = it.contact;
+      document.getElementById('f-asktype').value = it.askType;
+      document.getElementById('f-status').value = it.status;
+      document.getElementById('f-sent').value = it.sent;
+      document.getElementById('f-due').value = it.due;
+      document.getElementById('f-notes').value = it.notes || '';
+    } else {
+      document.getElementById('f-account').value = '';
+      document.getElementById('f-contact').value = '';
+      document.getElementById('f-asktype').value = 'Public Review';
+      document.getElementById('f-status').value = 'Waiting on customer';
+      document.getElementById('f-sent').value = '';
+      document.getElementById('f-due').value = '';
+      document.getElementById('f-notes').value = '';
+    }
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function closeForm() {
+    document.getElementById('fu-form').classList.remove('open');
+    editingId = null;
+  }
+
+  document.getElementById('fu-add-btn').addEventListener('click', function() { openForm(currentItems, null); });
+  document.getElementById('f-cancel').addEventListener('click', closeForm);
+  document.getElementById('f-save').addEventListener('click', function() {
+    var account = document.getElementById('f-account').value.trim();
+    if (!account) return;
+    var data = {
+      account: account,
+      contact: document.getElementById('f-contact').value.trim(),
+      askType: document.getElementById('f-asktype').value,
+      status: document.getElementById('f-status').value,
+      sent: document.getElementById('f-sent').value,
+      due: document.getElementById('f-due').value,
+      notes: document.getElementById('f-notes').value.trim()
+    };
+    var isNew = !editingId;
+    if (editingId) {
+      var idx = currentItems.findIndex(function(i) { return i.id === editingId; });
+      currentItems[idx] = Object.assign({ id: editingId }, data);
+    } else {
+      data = Object.assign({ id: String(Date.now()) }, data);
+      currentItems.push(data);
+    }
+    saveItems(currentItems);
+    pushItem_(isNew ? 'add' : 'update', isNew ? data : currentItems.find(function(i){ return i.id === editingId; }));
+    render(currentItems);
+    closeForm();
+  });
+
+  loadItems().then(function(items) {
+    currentItems = items;
+    render(currentItems);
+  });
+})();
+</script>
+</body>
+</html>
