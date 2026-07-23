@@ -89,6 +89,16 @@
   }
   .form input:focus, .form select:focus { outline: none; border-color: #5a7fb8; }
   .full { grid-column: 1 / -1; }
+  .links { display: flex; gap: 8px; margin-top: 6px; }
+  .links a {
+    font-size: 12px;
+    color: #7fa8d9;
+    text-decoration: none;
+    border: 1px solid #3a3e46;
+    border-radius: 6px;
+    padding: 3px 8px;
+  }
+  .links a:hover { background: #23262c; border-color: #4a4f58; }
 </style>
 </head>
 <body>
@@ -129,6 +139,8 @@
       <div><label>Date sent</label><input type="date" id="f-sent" /></div>
       <div><label>Follow-up due</label><input type="date" id="f-due" /></div>
       <div class="full"><label>Notes</label><input type="text" id="f-notes" placeholder="e.g. Sent once, no second follow-up planned" /></div>
+      <div><label>FreeScout link</label><input type="text" id="f-freescout" placeholder="https://freescout-production.../conversation/..." /></div>
+      <div><label>Trello link</label><input type="text" id="f-trello" placeholder="https://trello.com/c/..." /></div>
     </div>
     <div style="display:flex; gap:8px;">
       <button class="btn-primary" id="f-save">Save item</button>
@@ -151,9 +163,9 @@
   var currentItems = [];
 
   var seed = [
-    { id: '1', account: 'NOAT', contact: 'Martyn Tyson', askType: 'Public Review', status: 'Waiting on customer', sent: '2026-07-17', due: '2026-07-25', notes: 'Combined ROW store fix check-in + G2 ask. Sent once, no second follow-up planned.' },
-    { id: '2', account: 'riteinnovations.com', contact: 'Hayden', askType: 'Public Review', status: 'Waiting on customer', sent: '2026-07-21', due: '2026-07-31', notes: 'Churned customer, offered to leave review during cancellation call. One email only.' },
-    { id: '3', account: 'Vape Ranger', contact: 'Melissa Krizman', askType: 'Public Review', status: 'Waiting on customer', sent: '2026-07-24', due: '2026-08-03', notes: 'Utah hemp rate fix. One follow-up planned around Aug 8-10 if no reply.' }
+    { id: '1', account: 'NOAT', contact: 'Martyn Tyson', askType: 'Public Review', status: 'Waiting on customer', sent: '2026-07-17', due: '2026-07-25', notes: 'Combined ROW store fix check-in + G2 ask. Sent once, no second follow-up planned.', freescoutLink: 'https://freescout-production-u35315.vm.elestio.app/conversation/19751?folder_id=157', trelloLink: 'https://trello.com/c/RNBs7L41/41-shopnoatcom-orders-missing-tags' },
+    { id: '2', account: 'riteinnovations.com', contact: 'Hayden', askType: 'Public Review', status: 'Waiting on customer', sent: '2026-07-21', due: '2026-07-31', notes: 'Churned customer, offered to leave review during cancellation call. One email only.', freescoutLink: 'https://freescout-production-u35315.vm.elestio.app/conversation/19833?folder_id=42', trelloLink: 'https://trello.com/c/tSesgqnB/40-refund-deactivation-request-for-riteinnovationscom' },
+    { id: '3', account: 'Vape Ranger', contact: 'Melissa Krizman', askType: 'Public Review', status: 'Waiting on customer', sent: '2026-07-24', due: '2026-08-03', notes: 'Utah hemp rate fix. One follow-up planned around Aug 8-10 if no reply.', freescoutLink: 'https://freescout-production-u35315.vm.elestio.app/conversation/19982?folder_id=4', trelloLink: 'https://trello.com/c/gCrRDmjJ/43-vaperangercom-utah-hemp-ruleset-update' }
   ];
 
   function toDateOnly_(dateStr) {
@@ -251,6 +263,10 @@
         '<div class="main">' +
           '<p class="name">' + item.account + (item.contact ? ' &middot; ' + item.contact : '') + '</p>' +
           '<p class="sub">' + item.askType + ' — ' + item.status + (item.notes ? ' &middot; ' + item.notes : '') + '</p>' +
+          '<div class="links">' +
+            (item.freescoutLink ? '<a href="' + item.freescoutLink + '" target="_blank" rel="noopener">FreeScout</a>' : '') +
+            (item.trelloLink ? '<a href="' + item.trelloLink + '" target="_blank" rel="noopener">Trello</a>' : '') +
+          '</div>' +
         '</div>' +
         '<div class="meta">' +
           '<div class="due"><div><span class="lbl">sent</span> ' + fmtDate(item.sent) + '</div><div><span class="lbl">due</span> ' + fmtDate(item.due) + '</div></div>' +
@@ -303,6 +319,8 @@
       document.getElementById('f-sent').value = it.sent ? String(it.sent).split('T')[0] : '';
       document.getElementById('f-due').value = it.due ? String(it.due).split('T')[0] : '';
       document.getElementById('f-notes').value = it.notes || '';
+      document.getElementById('f-freescout').value = it.freescoutLink || '';
+      document.getElementById('f-trello').value = it.trelloLink || '';
     } else {
       document.getElementById('f-account').value = '';
       document.getElementById('f-contact').value = '';
@@ -311,6 +329,8 @@
       document.getElementById('f-sent').value = '';
       document.getElementById('f-due').value = '';
       document.getElementById('f-notes').value = '';
+      document.getElementById('f-freescout').value = '';
+      document.getElementById('f-trello').value = '';
     }
     form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -342,7 +362,9 @@
       status: document.getElementById('f-status').value,
       sent: document.getElementById('f-sent').value,
       due: document.getElementById('f-due').value,
-      notes: document.getElementById('f-notes').value.trim()
+      notes: document.getElementById('f-notes').value.trim(),
+      freescoutLink: document.getElementById('f-freescout').value.trim(),
+      trelloLink: document.getElementById('f-trello').value.trim()
     };
     var isNew = !editingId;
     if (editingId) {
