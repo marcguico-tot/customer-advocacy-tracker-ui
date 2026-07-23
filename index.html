@@ -142,7 +142,7 @@
 (function() {
   // Paste your Apps Script Web App deployment URL below (see apps-script-backend.gs).
   // Leave blank to fall back to this browser's localStorage only.
-  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylJ1sK5JlAm-v-QjYiebqqOhjmz1kRfze_fcXFH7ri5nP6hr2a212pWm0GgfZW4o2w6g/exec';
+  var SCRIPT_URL = '';
 
   var STORAGE_KEY = 'advocacy-followup-items';
   var editingId = null;
@@ -154,16 +154,24 @@
     { id: '3', account: 'Vape Ranger', contact: 'Melissa Krizman', askType: 'Public Review', status: 'Waiting on customer', sent: '2026-07-24', due: '2026-08-03', notes: 'Utah hemp rate fix. One follow-up planned around Aug 8-10 if no reply.' }
   ];
 
+  function toDateOnly_(dateStr) {
+    if (!dateStr) return null;
+    // Handles both plain 'yyyy-MM-dd' and full ISO strings like '2026-07-17T00:00:00.000Z'
+    var datePart = String(dateStr).split('T')[0];
+    return new Date(datePart + 'T00:00:00');
+  }
+
   function daysUntil(dateStr) {
-    var due = new Date(dateStr + 'T00:00:00');
+    var due = toDateOnly_(dateStr);
+    if (!due) return 0;
     var now = new Date();
     now.setHours(0,0,0,0);
     return Math.round((due - now) / 86400000);
   }
 
   function fmtDate(dateStr) {
-    if (!dateStr) return '—';
-    var d = new Date(dateStr + 'T00:00:00');
+    var d = toDateOnly_(dateStr);
+    if (!d) return '—';
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
@@ -290,8 +298,8 @@
       document.getElementById('f-contact').value = it.contact;
       document.getElementById('f-asktype').value = it.askType;
       document.getElementById('f-status').value = it.status;
-      document.getElementById('f-sent').value = it.sent;
-      document.getElementById('f-due').value = it.due;
+      document.getElementById('f-sent').value = it.sent ? String(it.sent).split('T')[0] : '';
+      document.getElementById('f-due').value = it.due ? String(it.due).split('T')[0] : '';
       document.getElementById('f-notes').value = it.notes || '';
     } else {
       document.getElementById('f-account').value = '';
